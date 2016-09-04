@@ -1,6 +1,114 @@
 import numpy as np
 
 
+def readDetectorOutput(fileName):
+    inPage = False
+    pageNo = 0
+    results = {"page":[], "time":[]}
+    with open(fileName, 'r') as f:
+        for line in f:
+            line = line.strip()
+            if line == "":
+                continue
+            elif inPage:
+                results["page"].append(pageNo)
+                results["time"].append(float(line))
+                numberSpindles -= 1
+                if numberSpindles == 0:
+                    inPage = False
+            else:
+                pageNo, numberSpindles = line.split(" ")
+                pageNo = int(pageNo)
+                numberSpindles = int(numberSpindles)
+                if numberSpindles:
+                    inPage = True
+
+    return pd.DataFrame(results)
+
+
+def sensitivity(TP, TN, FP, FN):  
+    if TP > 0 :
+        return TP/float(TP + FN)    
+    else:
+        return 0.0        
+
+
+def specificity(TP, TN, FP, FN):  
+    if TN > 0 :
+        return TN/float(FP + TN)
+    else:
+        return 0.0 
+
+
+def accuracy(TP, TN, FP, FN):  
+    if TN > 0 :
+        N = FN + TN +  FP + TP
+        return (TN + TP)/float(N)
+    else:
+        return 0.0                
+
+
+def PPV(TP, TN, FP, FN):    # Positive predictive value                 
+    if TP > 0 :
+        return TP/float(TP + FP)      
+    else:
+        return 0.0
+
+
+def NPV(TP, TN, FP, FN):    # Negative predictive value                        
+    if TN > 0 :
+        return TN/float(TN + FN)
+    else:
+        return 0.0 
+
+
+def MCC(TP, TN, FP, FN):    # Matthew's correlation coefficient                        
+    if TN > 0 :
+        num = float(TP*TN - FP*FN)
+
+        # NB: Casting as integers since Python integers has no maximal 
+        # value wheras numpy.int64 does. Without these casts, when analyzing
+        # whole nights, the operation P*P2*N*N2 can overflow.
+        P   = int(TP + FN)
+        P2  = int(TP + FP)
+        N   = int(FP + TN)
+        N2  = int(FN + TN)
+        den = (P*P2*N*N2)**0.5
+        if den == 0:
+            return 0.0
+        return num/den
+    else:
+        return 0.0 
+
+
+def randomAggreProb(TP, TN, FP, FN):    # Negative predictive value                        
+    if TN > 0 :
+        P   = TP + FN
+        P2  = TP + FP
+        N   = FP + TN
+        N2  = FN + TN
+        return float(P2*P + N2*N)/float((P+N)**2)
+    else:
+        return 0.0 
+
+
+def cohenk(TP, TN, FP, FN):    # Negative predictive value                        
+    if TN > 0 :
+        Pe  = randomAggreProb(TP, TN, FP, FN)
+        acc = accuracy(TP, TN, FP, FN) 
+        return (acc - Pe)/(1-Pe)
+    else:
+        return 0.0     
+
+def F1(TP, TN, FP, FN):    # Negative predictive value                        
+    if TN > 0 :
+        return (2.0*TP)/(2.0*TP + FP+FN)
+    else:
+        return 0.0 
+
+
+
+
 # Utilitary function to get variables necessary for training the detector, sampled randomly out of the
 # signals of the reader.
 def getTrainSignal(reader, nbTrainPage=30, eventName = 'spindleE1', channel = 'EEG C3-CLE'):
