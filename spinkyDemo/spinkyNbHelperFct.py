@@ -204,11 +204,15 @@ def sp_thresholds_ranges(mlab, trainSig, fs, epoch_length):
                    [trainSig, fs, epoch_length], 1))[0]
 		   
 def kp_thresholds_ranges(mlab, trainSig, fs, epoch_length):
-    return list(callMatlabFunc(mlab, "kp_thresholds_ranges", 
+    data=list(callMatlabFunc(mlab, "data_epoching", 
                    [trainSig, fs, epoch_length], 1))[0]
+    return list(callMatlabFunc(mlab, "kp_thresholds_ranges", 
+                   [data], 1))[0]
 				   
 				   
 				   
 def test_process(mlab, testSig, fs, epoch_length, subj_name, threshold, mode='spindles'):
     return list(callMatlabFunc(mlab, "test_process", 
                    [testSig, fs, epoch_length, subj_name, mode, threshold], 2))[0]
+
+
