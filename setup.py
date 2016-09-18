@@ -39,7 +39,7 @@ setup(
     long_description=DESCRIPTION, #open("README.txt").read(),
     author=AUTHOR,
     author_email=AUTHOR_EMAIL,
-    install_requires=[],
+    install_requires=["pandas", "numpy", "pymatbridge"],
     maintainer=AUTHOR,
     maintainer_email=AUTHOR_EMAIL,  
     license='LICENSE.txt',

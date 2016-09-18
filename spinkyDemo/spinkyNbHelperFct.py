@@ -1,9 +1,11 @@
 import numpy as np
-
+from pymatbridge import Matlab
+import pandas as pd
 
 def readDetectorOutput(fileName):
     inPage = False
     pageNo = 0
+    numberSpindles = 0
     results = {"page":[], "time":[]}
     with open(fileName, 'r') as f:
         for line in f:
@@ -170,7 +172,7 @@ def callMatlabFunc(mlab, funcName, inputArgs, nbOutputArg):
     matlabCode = ""
     if nbOutputArg == 1:
         matlabCode += "out0 = "
-    elif len(outputArg) > 1:
+    elif nbOutputArg > 1:
         matlabCode += "[" 
         for i in range(nbOutputArg):
             matlabCode += "out" + str(i) + ","
