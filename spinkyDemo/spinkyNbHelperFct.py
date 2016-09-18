@@ -199,16 +199,22 @@ def training_process(mlab, trainSig, fs, epoch_length, detection_mode, sp_thresh
     return list(callMatlabFunc(mlab, "training_process", 
                    [trainSig, fs, epoch_length, detection_mode, sp_thresh, nbSpindles], 1))[0]
 
-def sp_thresholds_ranges(mlab, trainSig, fs, epoch_length):
+def sp_thresholds_ranges(mlab, trainSig, epoch_length):
+    data=list(callMatlabFunc(mlab, "data_epoching", 
+                   [trainSig, epoch_length], 1))[0]
     return list(callMatlabFunc(mlab, "sp_thresholds_ranges", 
-                   [trainSig, fs, epoch_length], 1))[0]
+                   [data], 1))[0]
 		   
-def kp_thresholds_ranges(mlab, trainSig, fs, epoch_length):
+def kp_thresholds_ranges(mlab, trainSig, epoch_length):
+    data=list(callMatlabFunc(mlab, "data_epoching", 
+                   [trainSig, epoch_length], 1))[0]
     return list(callMatlabFunc(mlab, "kp_thresholds_ranges", 
-                   [trainSig, fs, epoch_length], 1))[0]
+                   [data], 1))[0]
 				   
 				   
 				   
 def test_process(mlab, testSig, fs, epoch_length, subj_name, threshold, mode='spindles'):
     return list(callMatlabFunc(mlab, "test_process", 
                    [testSig, fs, epoch_length, subj_name, mode, threshold], 2))[0]
+
+
