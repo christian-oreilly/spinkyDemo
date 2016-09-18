@@ -7,7 +7,14 @@ def readDetectorOutput(fileName, mode="spindles"):
     isStart = False
     pageNo = 0
     numberSpindles = -1
-    results = {"page":[], "start":[], "end":[]}
+    
+    if mode == "spindles":    
+        results = {"page":[], "start":[], "end":[]}
+    elif mode == "kcomplex":
+        results = {"page":[], "time":[]}
+    else:
+        raise ValueError("The mode argument must be equal to spindles or kcomplex.")
+    
     with open(fileName, 'r') as f:
         for line in f:
             line = line.strip()
@@ -31,7 +38,9 @@ def readDetectorOutput(fileName, mode="spindles"):
                     results["time"].append(float(line))
                     numberSpindles -= 1
                     if numberSpindles == 0:
-                        inPage = False                    
+                        inPage = False      
+                else:
+                    raise ValueError("The mode argument must be equal to spindles or kcomplex.")
             else:
                 pageNo, numberSpindles = line.split(" ")
                 pageNo = int(pageNo)
