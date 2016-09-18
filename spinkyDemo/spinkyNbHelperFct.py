@@ -2,7 +2,7 @@ import numpy as np
 from pymatbridge import Matlab
 import pandas as pd
 
-def readDetectorOutput(fileName):
+def readDetectorOutput(fileName, mode="spindles"):
     inPage = False
     isStart = False
     pageNo = 0
@@ -14,17 +14,24 @@ def readDetectorOutput(fileName):
             if line == "":
                 continue
             elif inPage:
-                if isStart:
-                    results["page"].append(pageNo)
-                    results["start"].append(float(line))
-                    isStart = False
-                else:
-                    results["end"].append(float(line))
-                    numberSpindles -= 1
-                    if numberSpindles:
-                        isStart = True
+                if mode == "spindles":
+                    if isStart:
+                        results["page"].append(pageNo)
+                        results["start"].append(float(line))
+                        isStart = False
                     else:
-                        inPage = False
+                        results["end"].append(float(line))
+                        numberSpindles -= 1
+                        if numberSpindles:
+                            isStart = True
+                        else:
+                            inPage = False
+                elif mode == "kcomplex":
+                    results["page"].append(pageNo)
+                    results["time"].append(float(line))
+                    numberSpindles -= 1
+                    if numberSpindles == 0:
+                        inPage = False                    
             else:
                 pageNo, numberSpindles = line.split(" ")
                 pageNo = int(pageNo)
