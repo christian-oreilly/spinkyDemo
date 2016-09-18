@@ -4,26 +4,34 @@ import pandas as pd
 
 def readDetectorOutput(fileName):
     inPage = False
+    isStart = False
     pageNo = 0
-    numberSpindles = 0
-    results = {"page":[], "time":[]}
+    numberSpindles = -1
+    results = {"page":[], "start":[], "end":[]}
     with open(fileName, 'r') as f:
         for line in f:
             line = line.strip()
             if line == "":
                 continue
             elif inPage:
-                results["page"].append(pageNo)
-                results["time"].append(float(line))
-                numberSpindles -= 1
-                if numberSpindles == 0:
-                    inPage = False
+                if isStart:
+                    results["page"].append(pageNo)
+                    results["start"].append(float(line))
+                    isStart = False
+                else:
+                    results["end"].append(float(line))
+                    numberSpindles -= 1
+                    if numberSpindles:
+                        isStart = True
+                    else:
+                        inPage = False
             else:
                 pageNo, numberSpindles = line.split(" ")
                 pageNo = int(pageNo)
                 numberSpindles = int(numberSpindles)
                 if numberSpindles:
                     inPage = True
+                    isStart = True
 
     return pd.DataFrame(results)
 
