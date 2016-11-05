@@ -1,4 +1,3 @@
-import numpy as np
 from pymatbridge import Matlab
 import pandas as pd
 
@@ -135,56 +134,26 @@ def F1(TP, TN, FP, FN):    # Negative predictive value
 
 
 
-# Utilitary function to get variables necessary for training the detector, sampled randomly out of the
-# signals of the reader.
-def getTrainSignal(reader, nbTrainPage=30, eventName = 'spindleE1', channel = 'EEG C3-CLE'):
-    stages2  = [e for e in reader.events if e.name == 'Sleep stage 2']
-    events   = [e for e in reader.events if e.name == eventName]
+def callMatlabFunc(mlab, funcName, inputArgs, nbOutputArg, debug=False, setupCode=""):
 
-    fs = reader.getChannelFreq(channel)
-    trainSig   = []
-    nbEvents = []
-    pages = np.random.choice(stages2, nbTrainPage)
-    epoch_length = np.min([s.duration() for s in stages2])
-    nbSamples = int(epoch_length*fs)
-    fs = nbSamples/epoch_length
-    for s in pages:
-        trainSig.append(reader.read([channel], s.startTime, s.duration())[channel].signal[0:nbSamples])              
-        nbEvents.append(len([e for e in events if e.startTime >= s.startTime and  
-                                                      e.startTime <= s.startTime + s.duration()]))
-    trainSig = np.concatenate(trainSig)
-    nbEvents = np.array(nbEvents)
-    
-    return trainSig, nbEvents, fs, epoch_length
+    if debug:
+        print("Entering callMatlabFunc...")    
 
-
-
-def getTestSignal(reader, channel = 'EEG C3-CLE'):
-    pages  = [e for e in reader.events if e.name == 'Sleep stage 2']
-    fs = reader.getChannelFreq(channel)
-    testSig   = []
-    epoch_length = np.min([s.duration() for s in pages])
-    nbSamples = int(epoch_length*fs)
-    fs = nbSamples/epoch_length    
-    for s in pages:
-        testSig.append(reader.read([channel], s.startTime, s.duration())[channel].signal[0:nbSamples])              
-    testSig = np.concatenate(testSig)
-    
-    return testSig, fs, epoch_length
-
-
-
-
-
-
-
-def callMatlabFunc(mlab, funcName, inputArgs, nbOutputArg):
     closeMatlab = False
     if mlab is None:
+        if debug:
+            print("Starting Matlab...")
         mlab = Matlab() #Matlab(matlab='C:/Program Files/MATLAB/R2015a/bin/matlab.exe')
         mlab.start() 
         closeMatlab = True
 
+    if len(setupCode):
+        result = mlab.run_code(setupCode)
+        if not result["success"]:
+            raise  RuntimeError(result["content"]["stdout"]  )
+
+    if debug:
+        print("Setting input variables...")    
         
     inputStr = ""
     if len(inputArgs):
@@ -192,6 +161,11 @@ def callMatlabFunc(mlab, funcName, inputArgs, nbOutputArg):
             mlab.set_variable("in" + str(i), arg)
             inputStr += "in" + str(i) + ","
         inputStr = inputStr[:-1]
+        
+    if debug:
+        print("Input variables set...")    
+        
+        
         
     matlabCode = ""
     if nbOutputArg == 1:
@@ -205,14 +179,28 @@ def callMatlabFunc(mlab, funcName, inputArgs, nbOutputArg):
         
     matlabCode += funcName + "(" + inputStr + ")"
 
+    if debug:
+        print("Matlab Code: ")
+        print(matlabCode)
+        
     result = mlab.run_code(matlabCode)
+
+    if debug:
+        print("run_code executed.")
+        print(result)
     
-    outArgs = (mlab.get_variable("out" + str(i)) for i in range(nbOutputArg))
+    outArgs = [mlab.get_variable("out" + str(i)) for i in range(nbOutputArg)]
+
+    if debug:
+        print("Out args: ")
+        print(outArgs)
     
     sucess = result["success"]
     stdout = result["content"]["stdout"]
     
     if closeMatlab :
+        if debug:
+            print("Stoping Matlab...")
         mlab.stop()
 
     if not sucess:
@@ -221,26 +209,35 @@ def callMatlabFunc(mlab, funcName, inputArgs, nbOutputArg):
     return outArgs
 
 
-def training_process(mlab, trainSig, fs, epoch_length, detection_mode, sp_thresh, nbSpindles):
-    return list(callMatlabFunc(mlab, "training_process", 
-                   [trainSig, fs, epoch_length, detection_mode, sp_thresh, nbSpindles], 1))[0]
+def training_process(mlab, trainSig, fs, epoch_length, detection_mode, sp_thresh, nbEvents):
+    setupCode = "train = @(trainSig, fs, epoch_length, detection_mode, sp_thresh, nbEvents) training_process(data_epoching(trainSig, epoch_length), fs, detection_mode, sp_thresh, nbEvents, 'Off');"
+    return callMatlabFunc(mlab, "train", 
+                   [trainSig, fs, epoch_length, detection_mode, sp_thresh, nbEvents], 1, setupCode=setupCode, debug=True)[0]
 
-def sp_thresholds_ranges(mlab, trainSig, epoch_length):
-    data=list(callMatlabFunc(mlab, "data_epoching", 
-                   [trainSig, epoch_length], 1))[0]
-    return list(callMatlabFunc(mlab, "sp_thresholds_ranges", 
-                   [data], 1))[0]
+    #return callMatlabFunc(mlab, "training_process", 
+    #               [trainSig, fs, epoch_length, detection_mode, sp_thresh, nbSpindles], 1)[0]
+
+
+
+def sp_thresholds_ranges(mlab, trainSig, epoch_length, fs):    
+    setupCode = "threshold_range = @(trainSig, epoch_length, fs) sp_thresholds_ranges(data_epoching(trainSig, epoch_length), fs);"
+    return callMatlabFunc(mlab, "threshold_range", 
+                   [trainSig, epoch_length, fs], 1, setupCode=setupCode)[0]
+
 		   
-def kp_thresholds_ranges(mlab, trainSig, epoch_length):
-    data=list(callMatlabFunc(mlab, "data_epoching", 
-                   [trainSig, epoch_length], 1))[0]
-    return list(callMatlabFunc(mlab, "kp_thresholds_ranges", 
-                   [data], 1))[0]
-				   
+def kp_thresholds_ranges(mlab, trainSig, epoch_length, fs):
+    setupCode = "threshold_range = @(trainSig, epoch_length, fs) kp_thresholds_ranges(data_epoching(trainSig, epoch_length), fs);"
+    return callMatlabFunc(mlab, "threshold_range", 
+                   [trainSig, epoch_length, fs], 1, setupCode=setupCode)[0]
+
 				   
 				   
 def test_process(mlab, testSig, fs, epoch_length, subj_name, threshold, mode='spindles'):
-    return list(callMatlabFunc(mlab, "test_process", 
-                   [testSig, fs, epoch_length, subj_name, mode, threshold], 2))[0]
+    setupCode = "test = @(testSig, fs, epoch_length, subj_name, mode, threshold) test_process(data_epoching(testSig, epoch_length), fs, subj_name, mode, threshold);"
+    return callMatlabFunc(mlab, "test", 
+                   [testSig, fs, epoch_length, subj_name, mode, threshold], 2, setupCode=setupCode)[0]
+
+    #return callMatlabFunc(mlab, "test_process", 
+    #               [testSig, fs, epoch_length, subj_name, mode, threshold], 2)[0]
 
 
