@@ -19,34 +19,22 @@ def readDetectorOutput(fileName, mode="spindles"):
             line = line.strip()
             if line == "":
                 continue
-            elif inPage:
+            else:
+                tokens = line.split()
+                pageNo = int(tokens[0])
+                nbEvents = int(tokens[1])
+                
                 if mode == "spindles":
-                    if isStart:
-                        results["page"].append(pageNo)
-                        results["start"].append(float(line))
-                        isStart = False
-                    else:
-                        results["end"].append(float(line))
-                        numberSpindles -= 1
-                        if numberSpindles:
-                            isStart = True
-                        else:
-                            inPage = False
+                    results["page"].extend([pageNo]*nbEvents)
+                    results["start"].extend([float(tokens[i+2]) for i in range(0, nbEvents*2, 2)])
+                    results["end"].extend([float(tokens[i+3]) for i in range(0, nbEvents*2, 2)])  
+                    
                 elif mode == "kcomplex":
-                    results["page"].append(pageNo)
-                    results["time"].append(float(line))
-                    numberSpindles -= 1
-                    if numberSpindles == 0:
-                        inPage = False      
+                    results["page"].extend([pageNo]*nbEvents)
+                    results["time"].extend([float(tokens[i+2]) for i in range(nbEvents)])
+                    
                 else:
                     raise ValueError("The mode argument must be equal to spindles or kcomplex.")
-            else:
-                pageNo, numberSpindles = line.split(" ")
-                pageNo = int(pageNo)
-                numberSpindles = int(numberSpindles)
-                if numberSpindles:
-                    inPage = True
-                    isStart = True
 
     return pd.DataFrame(results)
 
@@ -212,7 +200,7 @@ def callMatlabFunc(mlab, funcName, inputArgs, nbOutputArg, debug=False, setupCod
 def training_process(mlab, trainSig, fs, epoch_length, detection_mode, sp_thresh, nbEvents):
     setupCode = "train = @(trainSig, fs, epoch_length, detection_mode, sp_thresh, nbEvents) training_process(data_epoching(trainSig, epoch_length), fs, detection_mode, sp_thresh, nbEvents, 'Off');"
     return callMatlabFunc(mlab, "train", 
-                   [trainSig, fs, epoch_length, detection_mode, sp_thresh, nbEvents], 1, setupCode=setupCode, debug=True)[0]
+                   [trainSig, fs, epoch_length, detection_mode, sp_thresh, nbEvents], 1, setupCode=setupCode)[0]
 
     #return callMatlabFunc(mlab, "training_process", 
     #               [trainSig, fs, epoch_length, detection_mode, sp_thresh, nbSpindles], 1)[0]
@@ -226,9 +214,9 @@ def sp_thresholds_ranges(mlab, trainSig, epoch_length, fs):
 
 		   
 def kp_thresholds_ranges(mlab, trainSig, epoch_length, fs):
-    setupCode = "threshold_range = @(trainSig, epoch_length, fs) kp_thresholds_ranges(data_epoching(trainSig, epoch_length), fs);"
+    setupCode = "threshold_range = @(trainSig, epoch_length) kp_thresholds_ranges(data_epoching(trainSig, epoch_length));"
     return callMatlabFunc(mlab, "threshold_range", 
-                   [trainSig, epoch_length, fs], 1, setupCode=setupCode)[0]
+                   [trainSig, epoch_length], 1, setupCode=setupCode)[0]
 
 				   
 				   
