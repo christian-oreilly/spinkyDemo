@@ -1,6 +1,6 @@
 # spinkyDemo
 
-This python package demonstrates the use of the [Matlab toolbox SPINKY](https://github.com/TarekLaj/SPINKY) for the automatic detection of sleep spindles and K-complexes using Python 3 and the [python-matlab-bridge package](https://github.com/arokem/python-matlab-bridge). To use, simply download the example notebook. For example, on a linux machine:  
+This python package demonstrates the use of the [Matlab toolbox SPINKY](https://github.com/TarekLaj/SPINKY) for the automatic detection of sleep spindles and K-complexes using Python 3 and the [python-matlab-bridge package](https://github.com/arokem/python-matlab-bridge). This toolbox is presented in [(Lajnef  et al, 2017)](http://journal.frontiersin.org/article/10.3389/fninf.2017.00015/full). To use, simply download the example notebook. For example, on a linux machine:  
 ```
 $ wget https://github.com/christian-oreilly/spinkyDemo/blob/master/notebook/finalDemo.ipynb
 ```
